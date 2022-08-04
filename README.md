@@ -1,0 +1,1 @@
+# collection-of-statistics-on-vacancies
