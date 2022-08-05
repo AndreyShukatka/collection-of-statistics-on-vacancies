@@ -10,9 +10,10 @@ import terminaltables
 
 
 def search_vacations_hhru(language, url_hh, page=None):
+    city_id = 1
     params_all_days = {
         'text': f'Программист {language}',
-        'area': '1',
+        'area': city_id,
         'only_with_salary': 'True',
         'currency': 'RUR',
         'page': page
@@ -87,8 +88,8 @@ def average_salaries_hhru(program_languages, url_hh):
 
 def predict_rub_salary_for_superjob(language):
     predictioned_salaries = []
-    vacancys = add_vacancys_superjob(language)
-    for vacancy in vacancys:
+    vacancies = add_vacancies_superjob(language)
+    for vacancy in vacancies:
         payment_to = vacancy['payment_to']
         payment_from = vacancy['payment_from']
         if payment_to and payment_from != 0:
@@ -107,26 +108,29 @@ def predict_rub_salary_for_superjob(language):
 
 
 def request_superjob(superjob_token, superjob_auth, language):
+    city_id = 4
+    agreement_status = 1
     header = {
         'X-Api-App-Id': superjob_token,
         'Authorization': superjob_auth,
     }
     params = {
         'keywords': language,
-        'town': 4,
-        'no_agreement': 1
+        'town': city_id,
+        'no_agreement': agreement_status
     }
-    response = requests.get(url_superjob, headers=header, params=params).json()
-    return response
+    response = requests.get(url_superjob, headers=header, params=params)
+    response.raise_for_status()
+    return response.json()
 
 
-def add_vacancys_superjob(language):
-    vacancys = []
+def add_vacancies_superjob(language):
+    vacancies = []
     for vacancy in request_superjob(
             superjob_key, superjob_auth, language
     )['objects']:
-        vacancys.append(vacancy)
-    return vacancys
+        vacancies.append(vacancy)
+    return vacancies
 
 
 def get_average_salaries_superjob(program_languages):
