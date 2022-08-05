@@ -106,10 +106,10 @@ def predict_rub_salary_for_superjob(language):
     return predictioned_salaries
 
 
-def request_superjob(superjob_token, authorization, language):
+def request_superjob(superjob_token, superjob_auth, language):
     header = {
         'X-Api-App-Id': superjob_token,
-        'Authorization': authorization,
+        'Authorization': superjob_auth,
     }
     params = {
         'keywords': language,
@@ -123,7 +123,7 @@ def request_superjob(superjob_token, authorization, language):
 def add_vacancys_superjob(language):
     vacancys = []
     for vacancy in request_superjob(
-            secret_key, authorization, language
+            superjob_key, superjob_auth, language
     )['objects']:
         vacancys.append(vacancy)
     return vacancys
@@ -135,7 +135,7 @@ def get_average_salaries_superjob(program_languages):
         predictioned_salaries = predict_rub_salary_for_superjob(language)
         average_salary = int(sum(predictioned_salaries)) \
             // int(len(predictioned_salaries))
-        total = request_superjob(secret_key, authorization, language)['total']
+        total = request_superjob(superjob_key, superjob_auth, language)['total']
         vacancies_jobs[language] = {
             'vacancies_found': total,
             'vacancies_processed': len(predictioned_salaries),
@@ -163,8 +163,8 @@ def make_table(site_name, statistic):
 
 if __name__ == '__main__':
     load_dotenv()
-    authorization = os.environ['AUTHORIZATION']
-    secret_key = os.environ['X_API_APP_ID']
+    superjob_auth = os.environ['AUTHORIZATION']
+    superjob_key = os.environ['X_API_APP_ID']
     program_languages = [
         'Go', 'C++', 'PHP', 'Ruby', 'Python', 'Java', 'JavaScript'
     ]
