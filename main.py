@@ -93,17 +93,13 @@ def predict_rub_salary_for_superjob(language):
         payment_to = vacancy['payment_to']
         payment_from = vacancy['payment_from']
         if payment_to and payment_from:
-            average_salary = (payment_to + payment_from) // 2
-            predictioned_salaries.append(average_salary)
+            predictioned_salaries.append((payment_to + payment_from) // 2)
         elif payment_to:
-            average_salary = int(payment_to * 0.8)
-            predictioned_salaries.append(int(average_salary))
+            predictioned_salaries.append(int(payment_to * 0.8))
         elif payment_from:
-            average_salary = payment_from * 1.2
-            predictioned_salaries.append(int(average_salary))
+            predictioned_salaries.append(payment_from * 1.2)
         else:
-            average_salary = None
-            predictioned_salaries.append(average_salary)
+            predictioned_salaries.append(None)
     return predictioned_salaries
 
 
@@ -135,16 +131,19 @@ def pack_vacancies_list_superjob(language):
 
 def get_average_salaries_superjob(program_languages):
     vacancies_jobs = dict()
-    for language in program_languages:
-        predictioned_salaries = predict_rub_salary_for_superjob(language)
-        average_salary = int(sum(predictioned_salaries)) \
-            // int(len(predictioned_salaries))
-        total = request_superjob(superjob_key, superjob_auth, language)['total']
-        vacancies_jobs[language] = {
-            'vacancies_found': total,
-            'vacancies_processed': len(predictioned_salaries),
-            'average_salary': average_salary
-        }
+    try:
+        for language in program_languages:
+            predictioned_salaries = predict_rub_salary_for_superjob(language)
+            average_salary = int(sum(predictioned_salaries)) \
+                // int(len(predictioned_salaries))
+            total = request_superjob(superjob_key, superjob_auth, language)['total']
+            vacancies_jobs[language] = {
+                'vacancies_found': total,
+                'vacancies_processed': len(predictioned_salaries),
+                'average_salary': average_salary
+            }
+    except ZeroDivisionError:
+        print('Деление на 0 запрещено')
     return vacancies_jobs
 
 
