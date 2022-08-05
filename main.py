@@ -5,80 +5,79 @@ from itertools import count
 import requests
 import terminaltables
 
+from pprint import pformat
+
+def calculate_salary(payment_from, payment_to):
+    salary = 0
+    if payment_to and payment_from:
+        salary = int((payment_to + payment_from) // 2)
+    elif payment_to:
+        salary = int(payment_to * 0.8)
+    elif payment_from:
+        salary = int(payment_from * 1.2)
+    return salary
+
 
 # Функции для hh.ru:
 
 
 def search_vacations_hhru(language, url_hh, page=None):
     city_id = 1
+    per_page = 100
     params_all_days = {
         'text': f'Программист {language}',
         'area': city_id,
         'only_with_salary': 'True',
         'currency': 'RUR',
-        'page': page
+        'page': page,
+        'per_page': per_page
     }
     response_all_day = requests.get(url_hh, params=params_all_days)
     response_all_day.raise_for_status()
     vacancy_all_days = response_all_day.json()
-    return vacancy_all_days
+    total_vacancies = vacancy_all_days.get('found')
+    requested_vacancies = vacancy_all_days.get('items')
+    pages_amount = vacancy_all_days.get('pages')
+    return total_vacancies, requested_vacancies, pages_amount
 
 
-def add_vacancy_hhru(vacations, language):
-    url = 'https://api.hh.ru/vacancies'
-    params_all_days = {
-        'text': f'Программист {language}',
-        'area': '1',
-        'only_with_salary': 'True',
-        'currency': 'RUR'
-    }
-    response_all_day = requests.get(url, params=params_all_days)
-    vacancy_all_days = response_all_day.json()
-    for vacancy_info in vacancy_all_days['items']:
-        vacations.append(vacancy_info)
 
+def predict_rub_salary_hhru(requested_vacancies):
+    vacancies_processed = 0
+    total_salary = 0
+    for vacancy in requested_vacancies:
+        vacancy_salary = vacancy.get('salary')
+        if vacancy_salary.get('currency') != 'RUR':
+            continue
+        salary = calculate_salary(vacancy['salary']['from'], vacancy['salary']['to'])
+        if not salary:
+            continue
+        vacancies_processed += 1
+        total_salary += salary
+    average_salary = int(total_salary / vacancies_processed)
+    return average_salary, vacancies_processed
 
-def predict_rub_salary_hhru(language, url_hh):
-    predictioned_salaries = []
-    try:
-        for vacancy_salary in get_salaries_bracket_hhru(language, url_hh):
-            if vacancy_salary['to']\
-                    and vacancy_salary['from']:
-                salary = (int(vacancy_salary['to']) + int(vacancy_salary['from'])) // 2
-                predictioned_salaries.append(salary)
-            elif vacancy_salary['from']:
-                salary = int(vacancy_salary['from']) * 0.8
-                predictioned_salaries.append(int(salary))
-            elif vacancy_salary['to']:
-                salary = int(vacancy_salary['to']) * 1.2
-                predictioned_salaries.append(int(salary))
-    except TypeError:
-        predictioned_salaries.append(None)
-    return predictioned_salaries
-
-
-def get_salaries_bracket_hhru(language, url_hh):
-    salaries_bracket = []
-    for page in count(0):
-        vacations = search_vacations_hhru(language, url_hh, page=page)
-        for salary in vacations['items']:
-            salaries_bracket.append(salary['salary'])
-        if page >= vacations['pages']:
-            break
-    return salaries_bracket
 
 
 def average_salaries_hhru(program_languages, url_hh):
     vacancies_jobs = {}
     for language in program_languages:
-        total_vacancies = search_vacations_hhru(language, url_hh, page=None)
-        predictioned_salaries = predict_rub_salary_hhru(language, url_hh)
-        summary = int(sum(predictioned_salaries))\
-            // int(len(predictioned_salaries))
+        vacancy_summary = []
+        page = 0
+        pages_amount = 1
+        total_vacancies_processed = 0
+        b = 0
+        while page < pages_amount:
+            total_vacancies, requested_vacancies, pages_amount = search_vacations_hhru(language, url_hh, page=page)
+
+            vacancy_summary.extend(requested_vacancies)
+            page += 1
+            average_salary, vacancies_processed = predict_rub_salary_hhru(requested_vacancies)
+            total_vacancies_processed += vacancies_processed
         vacancies_jobs[language] = {
-            'vacancies_found': total_vacancies['found'],
-            'vacancies_processed': len(predictioned_salaries),
-            'average_salary': summary
+            'vacancies_found': total_vacancies,
+            'vacancies_processed': total_vacancies_processed,
+            'average_salary': average_salary
         }
     return vacancies_jobs
 
@@ -86,24 +85,20 @@ def average_salaries_hhru(program_languages, url_hh):
 # Функции для superjoba:
 
 
-def predict_rub_salary_for_superjob(language):
-    predictioned_salaries = []
-    vacancies = pack_vacancies_list_superjob(language)
+def predict_rub_salary_for_superjob(vacancies):
+    vacancies_processed = 0
+    total_salary = 0
     for vacancy in vacancies:
-        payment_to = vacancy['payment_to']
-        payment_from = vacancy['payment_from']
-        if payment_to and payment_from:
-            predictioned_salaries.append((payment_to + payment_from) // 2)
-        elif payment_to:
-            predictioned_salaries.append(int(payment_to * 0.8))
-        elif payment_from:
-            predictioned_salaries.append(payment_from * 1.2)
-        else:
-            predictioned_salaries.append(None)
-    return predictioned_salaries
+        salary = calculate_salary(vacancy['payment_from'], vacancy['payment_to'])
+        if not salary:
+            continue
+        vacancies_processed += 1
+        total_salary += salary
+    average_salary = int(total_salary // vacancies_processed)
+    return average_salary, vacancies_processed
 
 
-def request_superjob(superjob_token, superjob_auth, language):
+def request_superjob(superjob_token, superjob_auth, language, page):
     city_id = 4
     agreement_status = 1
     header = {
@@ -113,37 +108,35 @@ def request_superjob(superjob_token, superjob_auth, language):
     params = {
         'keywords': language,
         'town': city_id,
-        'no_agreement': agreement_status
+        'no_agreement': agreement_status,
+        'page': page,
+        'count': 100
     }
     response = requests.get(url_superjob, headers=header, params=params)
     response.raise_for_status()
-    return response.json()
+    server_response = response.json()
+    total_vacancies = server_response.get('total')
+    requested_vacancies = server_response.get('objects')
+    next_page_flag = server_response.get('more')
+    return total_vacancies, requested_vacancies, next_page_flag
 
 
-def pack_vacancies_list_superjob(language):
-    vacancies = []
-    for vacancy in request_superjob(
-            superjob_key, superjob_auth, language
-    )['objects']:
-        vacancies.append(vacancy)
-    return vacancies
-
-
-def get_average_salaries_superjob(program_languages):
+def get_average_salaries_superjob(program_languages, superjob_key):
     vacancies_jobs = dict()
-    try:
-        for language in program_languages:
-            predictioned_salaries = predict_rub_salary_for_superjob(language)
-            average_salary = int(sum(predictioned_salaries)) \
-                // int(len(predictioned_salaries))
-            total = request_superjob(superjob_key, superjob_auth, language)['total']
+    for language in program_languages:
+        vacancies_summary = []
+        next_page_flag = True
+        page = 0
+        while next_page_flag:
+            total_vacancies, requested_vacancies, next_page_flag = request_superjob(superjob_key, superjob_auth, language, page)
+            vacancies_summary.extend(requested_vacancies)
+            page += 1
+            average_salary, vacancies_processed = predict_rub_salary_for_superjob(vacancies_summary)
             vacancies_jobs[language] = {
-                'vacancies_found': total,
-                'vacancies_processed': len(predictioned_salaries),
+                'vacancies_found': total_vacancies,
+                'vacancies_processed': vacancies_processed,
                 'average_salary': average_salary
             }
-    except ZeroDivisionError:
-        print('Деление на 0 запрещено')
     return vacancies_jobs
 
 
@@ -169,13 +162,13 @@ if __name__ == '__main__':
     superjob_auth = os.environ['AUTHORIZATION']
     superjob_key = os.environ['X_API_APP_ID']
     program_languages = [
-        'Go', 'C++', 'PHP', 'Ruby', 'Python', 'Java', 'JavaScript'
+         'C++', 'PHP', 'Ruby', 'Python', 'Java', 'JavaScript'
     ]
     url_hh = 'https://api.hh.ru/vacancies'
     url_superjob = 'https://api.superjob.ru/2.0/vacancies/'
-    site_name = 'SuperJob Moscow'
     # Таблица SuperJob:
-    statistic = get_average_salaries_superjob(program_languages)
+    site_name = 'SuperJob Moscow'
+    statistic = get_average_salaries_superjob(program_languages, superjob_key)
     print(make_table(site_name, statistic))
 
     # Таблица HeadHunter:
