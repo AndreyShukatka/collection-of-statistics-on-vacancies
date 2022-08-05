@@ -88,17 +88,17 @@ def average_salaries_hhru(program_languages, url_hh):
 
 def predict_rub_salary_for_superjob(language):
     predictioned_salaries = []
-    vacancies = add_vacancies_superjob(language)
+    vacancies = pack_vacancies_list_superjob(language)
     for vacancy in vacancies:
         payment_to = vacancy['payment_to']
         payment_from = vacancy['payment_from']
-        if payment_to and payment_from != 0:
+        if payment_to and payment_from:
             average_salary = (payment_to + payment_from) // 2
             predictioned_salaries.append(average_salary)
-        elif payment_to > 0:
+        elif payment_to:
             average_salary = int(payment_to * 0.8)
             predictioned_salaries.append(int(average_salary))
-        elif payment_from > 0:
+        elif payment_from:
             average_salary = payment_from * 1.2
             predictioned_salaries.append(int(average_salary))
         else:
@@ -124,7 +124,7 @@ def request_superjob(superjob_token, superjob_auth, language):
     return response.json()
 
 
-def add_vacancies_superjob(language):
+def pack_vacancies_list_superjob(language):
     vacancies = []
     for vacancy in request_superjob(
             superjob_key, superjob_auth, language
