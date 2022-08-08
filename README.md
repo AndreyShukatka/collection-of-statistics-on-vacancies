@@ -25,8 +25,8 @@ pip install -r requirements.txt
 Далее создайте файл с названием:`.env`
 В созданном файле пропишите строки:
 `
-'X_API_APP_ID': 'Ваш полученый Secret Key'
-'AUTHORIZATION' 'Значение из пункта 3'
+'SUPERJOB_KEY': 'Ваш полученый Secret Key'
+'SUPERJOB_AUTH' 'Значение из пункта 3'
 `
 
 Для запуска скрипта используйте следующую команду:
