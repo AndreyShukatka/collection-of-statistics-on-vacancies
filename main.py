@@ -39,7 +39,6 @@ def get_request_hhru(language, url_hh, page=None):
     return total_vacancies, requested_vacancies, pages_amount
 
 
-
 def predict_rub_salary_hhru(requested_vacancies):
     vacancies_processed = 0
     total_salary = 0
@@ -48,7 +47,9 @@ def predict_rub_salary_hhru(requested_vacancies):
         vacancy_salary = vacancy.get('salary')
         if vacancy_salary.get('currency') != 'RUR':
             continue
-        salary = calculate_salary(vacancy['salary']['from'], vacancy['salary']['to'])
+        salary = calculate_salary(
+            vacancy['salary']['from'], vacancy['salary']['to']
+        )
         if not salary:
             continue
         vacancies_processed += 1
@@ -61,7 +62,6 @@ def predict_rub_salary_hhru(requested_vacancies):
         print('Деление на 0 запрещено')
 
 
-
 def average_salaries_hhru(program_languages, url_hh):
     vacancies_jobs = {}
     for language in program_languages:
@@ -71,10 +71,13 @@ def average_salaries_hhru(program_languages, url_hh):
         total_vacancies_processed = 0
         total_average_salary = 0
         while page < pages_amount:
-            total_vacancies, requested_vacancies, pages_amount = get_request_hhru(language, url_hh, page=page)
+            total_vacancies, requested_vacancies, pages_amount =\
+                get_request_hhru(language, url_hh, page=page)
             vacancy_summary.extend(requested_vacancies)
             page += 1
-            average_salary, vacancies_processed = predict_rub_salary_hhru(requested_vacancies)
+            average_salary, vacancies_processed = predict_rub_salary_hhru(
+                requested_vacancies
+            )
             total_vacancies_processed += vacancies_processed
             total_average_salary += average_salary
         vacancies_jobs[language] = {
@@ -94,7 +97,9 @@ def predict_rub_salary_for_superjob(vacancies):
     for vacancy in vacancies:
         if vacancy['currency'] != 'rub':
             continue
-        salary = calculate_salary(vacancy['payment_from'], vacancy['payment_to'])
+        salary = calculate_salary(
+            vacancy['payment_from'], vacancy['payment_to']
+        )
         if not salary:
             continue
         vacancies_processed += 1
@@ -104,7 +109,6 @@ def predict_rub_salary_for_superjob(vacancies):
         return average_salary, vacancies_processed
     except:
         print('Деление на 0 запрещено')
-
 
 
 def get_request_superjob(superjob_token, superjob_auth, language, page):
@@ -130,7 +134,9 @@ def get_request_superjob(superjob_token, superjob_auth, language, page):
     return total_vacancies, requested_vacancies, next_page_flag
 
 
-def get_average_salaries_superjob(program_languages, superjob_key, superjob_auth):
+def get_average_salaries_superjob(
+        program_languages, superjob_key, superjob_auth
+):
     vacancies_jobs = dict()
     for language in program_languages:
         vacancies_summary = []
@@ -139,10 +145,14 @@ def get_average_salaries_superjob(program_languages, superjob_key, superjob_auth
         total_vacancies_processed = 0
         total_average_salary = 0
         while next_page_flag:
-            total_vacancies, requested_vacancies, next_page_flag = get_request_superjob(superjob_key, superjob_auth, language, page)
+            total_vacancies, requested_vacancies, next_page_flag =\
+                get_request_superjob(
+                    superjob_key, superjob_auth, language, page
+                )
             vacancies_summary.extend(requested_vacancies)
             page += 1
-            average_salary, vacancies_processed = predict_rub_salary_for_superjob(vacancies_summary)
+            average_salary, vacancies_processed = \
+                predict_rub_salary_for_superjob(vacancies_summary)
             total_vacancies_processed += vacancies_processed
             total_average_salary += average_salary
             vacancies_jobs[language] = {
@@ -182,7 +192,9 @@ if __name__ == '__main__':
 
     # Таблица SuperJob:
     site_name = 'SuperJob Moscow'
-    statistic = get_average_salaries_superjob(program_languages, superjob_key,superjob_auth)
+    statistic = get_average_salaries_superjob(
+        program_languages, superjob_key, superjob_auth
+    )
     print(get_vacancies_table(site_name, statistic))
 
     # Таблица HeadHunter:
