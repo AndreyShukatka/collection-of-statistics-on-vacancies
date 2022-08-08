@@ -86,6 +86,9 @@ def predict_rub_salary_for_superjob(vacancies):
     vacancies_processed = 0
     total_salary = 0
     for vacancy in vacancies:
+        if vacancy['currency'] != 'rub':
+            continue
+        print(vacancy['currency'])
         salary = calculate_salary(vacancy['payment_from'], vacancy['payment_to'])
         if not salary:
             continue
@@ -166,7 +169,7 @@ if __name__ == '__main__':
 
     # Таблица SuperJob:
     site_name = 'SuperJob Moscow'
-    statistic = get_average_salaries_superjob(program_languages, superjob_key)
+    statistic = get_average_salaries_superjob(program_languages, superjob_key,superjob_auth)
     print(make_table(site_name, statistic))
 
     # Таблица HeadHunter:
