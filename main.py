@@ -1,11 +1,9 @@
 import os
 from dotenv import load_dotenv
-from itertools import count
 
 import requests
 import terminaltables
 
-from pprint import pformat
 
 def calculate_salary(payment_from, payment_to):
     salary = 0
@@ -21,7 +19,7 @@ def calculate_salary(payment_from, payment_to):
 # Функции для hh.ru:
 
 
-def search_vacations_hhru(language, url_hh, page=None):
+def get_request_hhru(language, url_hh, page=None):
     city_id = 1
     per_page = 100
     params_all_days = {
@@ -68,8 +66,7 @@ def average_salaries_hhru(program_languages, url_hh):
         total_vacancies_processed = 0
         b = 0
         while page < pages_amount:
-            total_vacancies, requested_vacancies, pages_amount = search_vacations_hhru(language, url_hh, page=page)
-
+            total_vacancies, requested_vacancies, pages_amount = get_request_hhru(language, url_hh, page=page)
             vacancy_summary.extend(requested_vacancies)
             page += 1
             average_salary, vacancies_processed = predict_rub_salary_hhru(requested_vacancies)
@@ -98,7 +95,7 @@ def predict_rub_salary_for_superjob(vacancies):
     return average_salary, vacancies_processed
 
 
-def request_superjob(superjob_token, superjob_auth, language, page):
+def get_request_superjob(superjob_token, superjob_auth, language, page):
     city_id = 4
     agreement_status = 1
     header = {
@@ -121,14 +118,14 @@ def request_superjob(superjob_token, superjob_auth, language, page):
     return total_vacancies, requested_vacancies, next_page_flag
 
 
-def get_average_salaries_superjob(program_languages, superjob_key):
+def get_average_salaries_superjob(program_languages, superjob_key, superjob_auth):
     vacancies_jobs = dict()
     for language in program_languages:
         vacancies_summary = []
         next_page_flag = True
         page = 0
         while next_page_flag:
-            total_vacancies, requested_vacancies, next_page_flag = request_superjob(superjob_key, superjob_auth, language, page)
+            total_vacancies, requested_vacancies, next_page_flag = get_request_superjob(superjob_key, superjob_auth, language, page)
             vacancies_summary.extend(requested_vacancies)
             page += 1
             average_salary, vacancies_processed = predict_rub_salary_for_superjob(vacancies_summary)
@@ -159,13 +156,14 @@ def make_table(site_name, statistic):
 
 if __name__ == '__main__':
     load_dotenv()
-    superjob_auth = os.environ['AUTHORIZATION']
-    superjob_key = os.environ['X_API_APP_ID']
+    superjob_auth = os.environ['SUPERJOB_AUTH']
+    superjob_key = os.environ['SUPERJOB_KEY']
     program_languages = [
          'C++', 'PHP', 'Ruby', 'Python', 'Java', 'JavaScript'
     ]
     url_hh = 'https://api.hh.ru/vacancies'
     url_superjob = 'https://api.superjob.ru/2.0/vacancies/'
+
     # Таблица SuperJob:
     site_name = 'SuperJob Moscow'
     statistic = get_average_salaries_superjob(program_languages, superjob_key)
