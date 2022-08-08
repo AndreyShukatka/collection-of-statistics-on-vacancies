@@ -30,12 +30,12 @@ def get_request_hhru(language, url_hh, page=None):
         'page': page,
         'per_page': per_page
     }
-    response_all_day = requests.get(url_hh, params=params_all_days)
-    response_all_day.raise_for_status()
-    vacancy_all_days = response_all_day.json()
-    total_vacancies = vacancy_all_days.get('found')
-    requested_vacancies = vacancy_all_days.get('items')
-    pages_amount = vacancy_all_days.get('pages')
+    response = requests.get(url_hh, params=params_all_days)
+    response.raise_for_status()
+    vacancy = response.json()
+    total_vacancies = vacancy.get('found')
+    requested_vacancies = vacancy.get('items')
+    pages_amount = vacancy.get('pages')
     return total_vacancies, requested_vacancies, pages_amount
 
 
@@ -52,8 +52,11 @@ def predict_rub_salary_hhru(requested_vacancies):
             continue
         vacancies_processed += 1
         total_salary += salary
-    average_salary = int(total_salary / vacancies_processed)
-    return average_salary, vacancies_processed
+    try:
+        average_salary = int(total_salary / vacancies_processed)
+        return average_salary, vacancies_processed
+    except ZeroDivisionError:
+        print('Деление на 0 запрещено')
 
 
 
@@ -64,7 +67,6 @@ def average_salaries_hhru(program_languages, url_hh):
         page = 0
         pages_amount = 1
         total_vacancies_processed = 0
-        b = 0
         while page < pages_amount:
             total_vacancies, requested_vacancies, pages_amount = get_request_hhru(language, url_hh, page=page)
             vacancy_summary.extend(requested_vacancies)
@@ -88,14 +90,17 @@ def predict_rub_salary_for_superjob(vacancies):
     for vacancy in vacancies:
         if vacancy['currency'] != 'rub':
             continue
-        print(vacancy['currency'])
         salary = calculate_salary(vacancy['payment_from'], vacancy['payment_to'])
         if not salary:
             continue
         vacancies_processed += 1
         total_salary += salary
-    average_salary = int(total_salary // vacancies_processed)
-    return average_salary, vacancies_processed
+    try:
+        average_salary = int(total_salary // vacancies_processed)
+        return average_salary, vacancies_processed
+    except:
+        print('Деление на 0 запрещено')
+
 
 
 def get_request_superjob(superjob_token, superjob_auth, language, page):
