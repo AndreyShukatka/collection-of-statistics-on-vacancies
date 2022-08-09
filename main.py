@@ -69,7 +69,8 @@ def get_average_salaries_hhru(program_languages, url_hh):
         page = 0
         pages_amount = 1
         while page < pages_amount:
-            total_vacancies, requested_vacancies, pages_amount = get_request_hhru(language, url_hh, page=page)
+            total_vacancies, requested_vacancies, pages_amount =\
+                get_request_hhru(language, url_hh, page=page)
             vacancy_summary.extend(requested_vacancies)
             page += 1
         average_salary, vacancies_processed = predict_rub_salary_hhru(
@@ -145,7 +146,8 @@ def get_average_salaries_superjob(
                 )
             vacancies_summary.extend(requested_vacancies)
             page += 1
-        average_salary, vacancies_processed = predict_rub_salary_for_superjob(vacancies_summary)
+        average_salary, vacancies_processed = \
+            predict_rub_salary_for_superjob(vacancies_summary)
         vacancies_jobs[language] = {
             'vacancies_found': total_vacancies,
             'vacancies_processed': vacancies_processed,
