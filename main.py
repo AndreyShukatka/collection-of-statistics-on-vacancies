@@ -59,7 +59,8 @@ def predict_rub_salary_hhru(requested_vacancies):
         total_salary_all += average_salary
         return average_salary, vacancies_processed
     except ZeroDivisionError:
-        raise ZeroDivisionError('Деление на 0 запрещено')
+        average_salary = 0
+        return average_salary, vacancies_processed
 
 
 def get_average_salaries_hhru(program_languages, url_hh):
@@ -68,7 +69,7 @@ def get_average_salaries_hhru(program_languages, url_hh):
         vacancy_summary = []
         page = 0
         pages_amount = 1
-        while page < pages_amount:
+        while page <= pages_amount:
             total_vacancies, requested_vacancies, pages_amount =\
                 get_request_hhru(language, url_hh, page=page)
             vacancy_summary.extend(requested_vacancies)
@@ -104,7 +105,8 @@ def predict_rub_salary_for_superjob(vacancies):
         average_salary = int(total_salary // vacancies_processed)
         return average_salary, vacancies_processed
     except ZeroDivisionError:
-        raise ZeroDivisionError('Деление на 0 запрещено')
+        average_salary = 0
+        return average_salary, vacancies_processed
 
 
 def get_request_superjob(superjob_token, superjob_auth, language, page):
